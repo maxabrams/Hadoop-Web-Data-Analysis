@@ -1,0 +1,363 @@
+#Max Abrams solutions to Hadoop exercises described in README
+Task 1 code begin
+#!/usr/bin/python
+#Mapper code for Task 1. No reducer is needed.
+import sys
+
+#Split the sentence into words and for every word in every sentence convert the word to lower-case.
+for sentence in sys.stdin:
+    for word in sentence.split(" "):
+        print word.lower(), 
+ 
+#Hadoop command: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -input /data/assignments/ex1/webLarge.txt -output /user/$USER/ex1/s1572616_task_1.out -mapper lower-case.py -file lower-case.py      
+Task 1 code end
+
+Task 2 code begin
+#!/usr/bin/python
+#Mapper code for Task 2.
+import sys
+
+#Print every line to be sorted then have duplicates removed by reducer
+for line in sys.stdin:
+                print line,
+
+#!/usr/bin/python
+#Reducer for Task 2
+import sys
+
+#Loop the entire file
+key = sys.stdin.readline()
+while key != '':
+        instance = key
+        #Since the data is sorted, loop through every duplicate until we find a new unique line.
+        while True:
+                key = sys.stdin.readline()
+                if key != instance:
+                        #Must be a new line
+                        break
+        #Print original line and repeat process
+        print instance,   
+                        
+#Hadoop command: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -input /user/$USER/ex1/s1572616_task_1.out -output /user/$USER/ex1/s1572616_task_2.out -mapper duplicated_mapper.py -reducer duplicated_reducer.py -file duplicated_mapper.py duplicated_reducer.py
+Task 2 code end
+
+Task 3 code begin
+#!/usr/bin/python
+#Mapper for Task 3
+import sys
+
+lineCount = 0;
+wordCount = 0;
+
+#For ever line, add the number of words wordCount and increment lineCount
+for line in sys.stdin:
+        wordCount += len(line.split())
+        lineCount += 1
+print wordCount," ",lineCount,
+
+#!/usr/bin/python
+#Reducer for Task 3
+import sys
+
+wordTotal = 0
+lineTotal = 0
+
+#Read in the word count and line count from every line of mappers and print the total
+for line in sys.stdin:
+        data = line.split()
+        wordTotal += int(data[0])
+        lineTotal += int(data[1])
+print wordTotal," ",lineTotal
+
+#Hadoop command (one reducer used so save user from summing totals from multiple files): hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapred.reduce.tasks=1 -input /user/$USER/ex1/s1572616_task_2.out -output /user/$USER/ex1/s1572616_task_3.out -mapper wc_mapper.py -reducer wc_reducer.py -file wc_mapper.py wc_reducer.py
+Task 3 code end
+
+Task 4 code begin
+#!/usr/bin/python
+#Mapper for task 4
+import sys
+
+#Read every line and split into words
+for line in sys.stdin:
+        list = line.split()
+        count = 0
+        #Loop and print pairs with count of 1
+        while(count<(len(list)-1)):
+                print list[count],"\t",list[count+1],"\t", 1
+                count+=1
+
+#!/usr/bin/python
+#Reducer for task 4
+import sys
+
+#Read in first pair and loop until there are no more pairs
+key = sys.stdin.readline()
+values = key.split()
+count = int(values[2])
+while key != '':
+        #Since sorted, count up sequential lines
+        #Keep counting until you reach a line with a new pair
+        #Print the total for that pair and repeat for new pair
+        while True:
+                key = sys.stdin.readline()
+                secValues = key.split()
+                if key == '':
+                        #If reach the EOF then print total as no more pairs to add
+                        print values[0],"\t",values[1],"\t",count
+                        break
+                elif values[0]!=secValues[0] or values[1]!=secValues[1]:
+                        #New pair, so print the total from the previous pairs and move to the next
+                        print values[0],"\t",values[1],"\t",count
+                        values = secValues
+                        count = int(values[2])
+                        break
+                else:
+                        #Must be the same pair, increase the count
+                        count+=int(secValues[2])
+#Hadoop command:
+hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=2 -D num.key.fields.for.partition=2 -input /user/$USER/ex1/s1572616_task_2.out -output /user/$USER/ex1/s1572616_task_4.out -mapper pair_mapper.py -reducer pair_reducer.py -file pair_mapper.py pair_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 4 code end
+
+Task 5 code begin
+#!/usr/bin/python
+#Mapper for task 4
+import sys
+
+#Read every line and split into words
+for line in sys.stdin:
+        list = line.split()
+        count = 0
+        #Loop and print pairs with count of 1
+        while(count<(len(list)-1)):
+                print list[count]," ",list[count+1],"\t", 1
+                count+=1
+
+#!/usr/bin/python
+#Combiner for task 4
+import sys
+
+#Read in first pair and loop until there are no more pairs
+key = sys.stdin.readline()
+values = key.split()
+count = int(values[2])
+while key != '':
+        #Since sorted, count up sequential lines
+        #Keep counting until you reach a line with a new pair
+        #Print the total for that pair and repeat for new pair
+        while True:
+                key = sys.stdin.readline()
+                secValues = key.split()
+                if key == '':
+                        #If reach the EOF then print total as no more pairs to add
+                        print values[0]," ",values[1],"\t",count
+                        break
+                elif values[0]!=secValues[0] or values[1]!=secValues[1]:
+                        #New pair, so print the total from the previous pairs and move to the next
+                        print values[0]," ",values[1],"\t",count
+                        values = secValues
+                        count = int(values[2])
+                        break
+                else:
+                        #Must be the same pair, increase the count
+                        count+=int(secValues[2])
+
+#!/usr/bin/python
+#Reducer for task 4
+import sys
+
+#Read in first pair and loop until there are no more pairs
+key = sys.stdin.readline()
+values = key.split()
+count = int(values[2])
+while key != '':
+        #Since sorted, count up sequential lines
+        #Keep counting until you reach a line with a new pair
+        #Print the total for that pair and repeat for new pair
+        while True:
+                key = sys.stdin.readline()
+                secValues = key.split()
+                if key == '':
+                        #If reach the EOF then print total as no more pairs to add
+                        print values[0]," ",values[1],"\t",count
+                        break
+                elif values[0]!=secValues[0] or values[1]!=secValues[1]:
+                        #New pair, so print the total from the previous pairs and move to the next
+                        print values[0]," ",values[1],"\t",count
+                        values = secValues
+                        count = int(values[2])
+                        break
+                else:
+                        #Must be the same pair, increase the count
+                        count+=int(secValues[2])
+
+#Hadoop command: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=1 -D num.key.fields.for.partition=1 -input /user/$USER/ex1/s1572616_task_2.out -output /user/$USER/ex1/s1572616_task_5.out -mapper pair_mapper.py -combiner pair_reducer.py -reducer pair_reducer.py -file pair_mapper.py pair_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 5 code end
+
+Task 6 code begin
+#!/usr/bin/python
+#Mapper for task 6
+import sys
+
+#Pass each line from task 4 to be sorted by pair count
+for line in sys.stdin:
+        print line,                   
+
+#!/usr/bin/python
+#Reducer for task 6
+import sys
+
+#Print top 20 items to be re-ran with MapReduce. Must run through all lines or reducing fails
+numPrinted = 0
+for line in sys.stdin:
+        if(numPrinted<20):
+                print line,
+                numPrinted+=1
+
+#Hadoop command 1: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options=-k3,3nr -D mapreduce.partition.keycomparator.options=-k3,3nr -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=3 -D num.key.fields.for.partition=3 -input /user/$USER/ex1/s1572616_task_4.out -output /user/$USER/ex1/s1572616_task_6a.out -mapper top_pair_mapper.py -reducer top_pair_reducer.py -file top_pair_mapper.py top_pair_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+
+#Hadoop command 2: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options=-k3,3nr -D mapreduce.partition.keycomparator.options=-k3,3nr -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=3 -D num.key.fields.for.partition=3 -D mapred.reduce.tasks=1 -input /user/$USER/ex1/s1572616_task_6a.out -output /user/$USER/ex1/s1572616_task_6.out -mapper top_pair_mapper.py -reducer top_pair_reducer.py -file top_pair_mapper.py top_pair_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 6 code end
+
+Task 7 code begin
+#!/usr/bin/python
+#Mapper for task 7
+import sys
+
+#Take in a row and output each value and a corresponding col and row (swapped)
+for line in sys.stdin:
+        parse = line.split()
+        row=parse[0]
+        col = 1;
+        #Read the whole row
+        while col<len(parse):
+                print col,"\t",row,"\t", parse[col]
+                col += 1
+
+#!/usr/bin/python
+#Reducer for task 7
+import sys
+
+#Data arrives as [row,col,value]
+#Take first data element to understand what row to fill
+values = sys.stdin.readline().split()
+row = values[0]
+print values[0],"\t",values[2],
+for line in sys.stdin:
+        #Data arrives as row,col,value
+        parse = line.split()
+        if parse[0]!=row:
+                #Different row index, so make a new row
+                row=parse[0]
+                print ""
+                print parse[0],"\t",parse[2],
+        else:
+                #Same row, continue filling
+                print parse[2],
+
+
+#!/usr/bin/python
+#Mapper/reducer for second Hadoop run of task 7
+import sys
+
+for line in sys.stdin:
+        print line,
+#Hadoop command 1:
+hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options="-k1,1n -k2,2n" -D mapreduce.partition.keycomparator.options="-k1,1n -k2,2n" -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=2 -D num.key.fields.for.partition=1 -input /data/assignments/ex1/matrixLarge.txt  -output /user/$USER/ex1/s1572616_task_7a.out -mapper matrix_mapper.py -reducer matrix_reducer.py -file matrix_mapper.py matrix_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+#Hadoop command 2:
+hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options=-k1,1n -D mapreduce.partition.keycomparator.options=-k1,1n -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D mapred.reduce.tasks=1 -D stream.num.map.output.key.fields=1 -D num.key.fields.for.partition=1 -input /user/$USER/ex1/s1572616_task_7a.out  -output /user/$USER/ex1/s1572616_task_7.out -mapper matrix_print.py -reducer matrix_print.py -file matrix_print.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 7 code end
+
+
+Task 8 code begin
+#!/usr/bin/python
+#Mapper for task 8
+import sys
+
+#Loop through the data and associate data
+#Student data translated to ID,0,Name
+#Mark data translated to ID,1,CourseName,Mark
+#0 and 1 used for secondary sorting so that student student data comes before mark data
+for line in sys.stdin:
+        parse = line.split()
+        if len(parse)==0:
+                break
+        elif parse[0] == "student":
+                #If it is a student print ID number then name
+                print parse[1],"\t0\t",parse[2]
+        else:
+                #Must be a mark input, print ID, course name, then mark
+                print parse[2],"\t1\t",parse[1],"\t",parse[3]
+
+#!/usr/bin/python
+#Reducer for task 8
+import sys
+
+#Because of sorting, student will always come before mark data
+key = sys.stdin.readline()
+while key != '':
+        #handle first case
+        courseName=[]
+        courseMark=[]
+        parse = key.split()
+        name = parse[2]
+        while True:
+                #Loop through list of courses and add the name and mark to corresponding lists
+                key = sys.stdin.readline()
+                valueList = key.split()
+                if len(valueList)==0 or valueList[0] != parse[0]:
+                        break
+                else:
+                        courseName.append(valueList[2])
+                        courseMark.append(valueList[3])
+        #Don't print if there aren't any courses for the student
+        if len(courseName)!=0:
+                #Print the student's name and corresponding courses
+                print name,'--> ',
+                index=0
+                while index<len(courseName):
+                        #Print every course assosiated with student
+                        formatStr = "("+courseName[index]+","+courseMark[index]+") "
+                        sys.stdout.write(formatStr)
+                        index+=1
+                print ""
+#Hadoop command: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options=-k1,1n -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=2 -D num.key.fields.for.partition=1  -input /data/assignments/ex1/uniLarge.txt -output /user/$USER/ex1/s1572616_task_8.out -mapper join_mapper.py -reducer join_reducer.py -file join_mapper.py join_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 8 code end
+
+Task 9 code begin
+#!/usr/bin/python
+#Mapper for task 9
+import sys
+
+for line in sys.stdin:
+        split = line.split()
+        #If the length of split is greater than 6, then you know there must be 4 classes
+        #This is because part 8 output will split as [name,arrow,class1,class2,class3,class4...]
+        if len(split)>6:
+                #Calculate average for all courses
+                index = 0
+                sum = 0.0
+                #Loop through and calc avg but do not use first two indexs (name and arrow)
+                while (index<len(split)-2):
+                        parse = split[2+index].translate(None,'()')
+                        number = parse.split(',')
+                        sum+=float(number[1])
+                        index+=1
+                print (sum/index),"\t",split[0]
+
+#!/usr/bin/python
+#Reducer for task 9
+import sys
+
+#Since data will arrived sorted by avg, simply print the name and the average
+key = sys.stdin.readline()
+if key!='':
+        instance = key.split()
+        #Data arrives as [avg,name]
+        while key!='' and key.split()[0]==instance[0]:
+                print key.split()[1],key.split()[0]
+                key = sys.stdin.readline()
+#Hadoop command: hadoop jar /opt/hadoop/hadoop-2.7.1/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar -D mapreduce.partition.keypartitioner.options=-n -D mapreduce.job.output.key.comparator.class=org.apache.hadoop.mapreduce.lib.partition.KeyFieldBasedComparator -D stream.num.map.output.key.fields=2 -D num.key.fields.for.partition=1  -input /user/$USER/ex1/s1572616_task_8.out -output /user/$USER/ex1/s1572616_task_9.out -mapper avg_mapper.py -reducer avg_reducer.py -file avg_mapper.py avg_reducer.py -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner
+Task 9 code end
+
+
+
